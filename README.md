@@ -1,74 +1,81 @@
 # Spring-Web-JWT
 
+Adding JWT-based authorization to a Spring Web project is painful. Spring-Web-JWT provides a library
+to include in your existing projects.
+
+This top-level project is broken into two modules:
+
+ * Spring-Web-JWT -- the library
+ * Demo -- a demo that uses the library
+
 A starter project for any Spring REST app that wants to do database-based JWT user authentication.
 
 To use this project, you can either just copy it and do some basic renaming, or you can copy certain files into your
 project. I'll list them once I know them.
 
-# Spring Initializer
-When creating this project, I used the Spring Initializer. I selected these additional packages:
+This project will be far easier if you use IntelliJ IDEA for your IDE. Otherwise, you'll have to figure out the
+appropriate Gradle commands yourself. (Maybe someone will help document that part.)
 
-* Project Lombok
-* Spring Web
-* Spring Data JPA
-* Spring Security
-* PostgreSQL
+# To Run the Demo
+To run the demo application, within IDEA:
 
-# How it Works
-We're going to use a Security Filter Chain. We'll enable a Login REST call with no authentication and do it manually
-in order to return a JWT to the caller.
+ * Expand Gradle -- the Gradle icon in the far right border area.
+ * Expand the pulldown for Spring-Web-JWT
+ * Expand the pulldown for publishing
+ * Execute publishToMavenLocal
 
-All other calls will require the token itself, and we'll store the current user record in thread local storage to be
-available as needed. The individual calls will not have to do anything about authentication but may need to code
-authorization themselves. (Authentication is knowing who this is. Authorization is know what that person is
-allowed to do.)
+This will do a build and then copy the build artifacts into your ~/.m2/repository maven repository. Now the
+library is installed locally.
 
-Hmm. I'll also add some role-based authorization, mostly as a demo.
+Next, the Demo application requires a local database. It's configured to expect PostgreSQL. If you use a different
+database provider, you're on your own setting it up. If you're using PostgreSQL:
 
-# Setup
-If you want to run this demo locally, one assumes you cloned it. Edit application.properties files to configure
-your database info, right at the top.
+    createuser --password --createdb demo
 
-For PostgreSQL, assuming it's running locally, you can do this:
+This will prompt for a password. As configured, the password is demo, but we're going to update the config shortly.
 
-    createuser --createdb --password demo
+    createdb -U demo demo
 
-When prompted, give a password.
-
-Then you can do this:
+You can, of course, use a role and dbname other than demo.
 
     psql -U demo demo
-    create table member(id serial, username text, password text, role text, created_at timestamp default now());
-    quit
+    CREATE TABLE member (
+        id serial,
+        username text,
+        password text,
+        role text,
+        created_at timestamp without time zone default now()
+    );
 
-After that, run this application and do something like this:
+Now it's time to update the configuration. Within Demo, open `src/main/resources/application.yml`. If you're to the point
+of wanting a Spring Boot application that uses JWT authentication, one presumes you know how to change this configuration.
 
-    curl -s "http://localhost:8080/seed?username=foo&password=bar"
+Note that my database server as a `/etc/hosts` entry of `dbserver`. Feel free to change that to `localhost` or whatever is
+appropriate for your system. Change the username and password if you didn't use `demo:demo`. Change the database from
+`demo` as appropriate.
 
-This will seed the member table with one user with this username and password. It will only do so if there are no
-members at all.
+`show-sql` makes Hibernate really chatty. Feel free to set if to false or remove those three lines entirely.
 
-At this point, you can do this:
+At that point, you can execute the Demo application. You should get a running REST application (with no HTML support)
+on port 8080 (or override yourself in the run config).
 
-    curl -s -u foo:bar http://localhost:8080/login
+This call requires no authentication.
 
-This will return a JSON structure with your JWT inside. On my machine, I have a program called `jq` installed, and
-I might do something like this:
+    curl http://localhost:8080/ping
 
-    AUTH=`curl -s -u foo:bar http://localhost:8080/login | jq -r .Authentication`
+This call will seed the database with one administrative user and return the token you can use in subsequent calls.
 
-After that, you can do something like:
+    curl -u user:password http://localhost:8080/seed
 
-    curl -s -H "Authentication: Bearer ${AUTH}" -H http://localhost:8080/test
+Use an appropriate username and password. Here's a better example:
 
-This will also return JSON.
+curl -u 'someone@nowhere.com:ThisIsMyPassword' http://localhost:8080/seed
 
-# References
-It was tricky to find good info setting this up. This guy does a great job, although his
-videos are long:
+If you have `jq` on your system, you can do something like this:
 
-https://www.youtube.com/watch?v=KxqlJblhzfI
+        AUTH=`curl -s -X POST -H "Content-Type: application/json" \
+            -d '{"username": "Your Username", "password": "Your Password" }' \
+            "http://localhost:8080/auth/authenticate" \
+            | jq -r .token`
 
-It's easy to find lots and lots of help. It's more difficult sorting through and finding modern
-help. As of February, 2024, Spring Data version is 6.0, and so many tutorials are based on older
-versions. The video linked I found by specifying Spring Security 6.
+Otherwise just make it a simple curl command and cut & paste the token yourself.
