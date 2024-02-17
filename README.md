@@ -89,6 +89,8 @@ Summary:
 * Define a few Beans.
     * You can probably copy and paste `ApplicationConfig.java` below.
 
+## Updating Maven or Gradle
+
 Gradle:
 
     dependencies {
@@ -104,6 +106,7 @@ Someone send me the maven equivalent, please.
 
 This will change a tiny bit once we're publishing to Maven Central.
 
+## Implement User Details Somehow
 You will need some way of doing user lookups. I'm storing mine in PostgreSQL. You then need to create a bean. I have
 a MemberRepository as follows:
 
@@ -209,6 +212,8 @@ Note the method `getAuthorities()`. I have an enum named `UserRole` that provide
 just use strings or even hardcode something, if all your users are the same, or if you're going to handle user management
 in another fashion.
 
+## Define Some Beans
+
 And then add something like this:
 
     @Configuration
@@ -269,3 +274,11 @@ fits my needs. It has this line:
 And it expects to be able to get a string array from it. This is the list of URLs that should require no JWT token.
 In this case, you can ping, seed, register, or login without a token, and all other calls will require a proper
 JWT token passed like in the Authorization header as `Bearer YourToken`.
+
+## Still To Do: The Signing Key
+Right now, the signing key is hard-coded. In JWT, signing keys are any bytes. You can use anything. I provided
+a bunch of text in my example. I'm going to update my demo to instead use a proper key. For now, what we've got
+here works, but it's insecure if anyone knows you're using this project. Take a look at the last method of
+JwtService.java if you want to understand why.
+
+I'll fix it shortly.
