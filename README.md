@@ -16,6 +16,9 @@ project. I'll list them once I know them.
 This project will be far easier if you use IntelliJ IDEA for your IDE. Otherwise, you'll have to figure out the
 appropriate Gradle commands yourself. (Maybe someone will help document that part.)
 
+# License
+This project is distributed under the MIT License. See the attached LICENSE file.
+
 # To Run the Demo
 To run the demo application, within IDEA:
 
@@ -282,3 +285,15 @@ here works, but it's insecure if anyone knows you're using this project. Take a 
 JwtService.java if you want to understand why.
 
 I'll fix it shortly.
+
+# Contributing
+I am fairly recently returned to Java. I may have gotten a few things wrong. Please feel free to tell me better ways
+to do things.
+
+The best thing you can do is to fork the project, make fixes and enhancements, and submit Pull Requests. I ask that
+you honor my coding style. Please don't reformat my code just because you like it differently.
+
+Note that I use a fair amount of white space. Code should be readable even to my old eyes.
+
+Feel free to email my. My email is openly available via GitHub.
+
