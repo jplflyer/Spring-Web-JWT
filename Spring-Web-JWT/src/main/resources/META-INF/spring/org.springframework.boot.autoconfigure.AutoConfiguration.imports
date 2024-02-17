@@ -1,0 +1,4 @@
+org.showpage.springwebjwt.config.ApplicationConfig
+org.showpage.springwebjwt.config.JwtAuthenticationFilter
+org.showpage.springwebjwt.config.JwtService
+org.showpage.springwebjwt.config.SecurityConfiguration

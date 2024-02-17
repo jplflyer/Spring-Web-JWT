@@ -79,3 +79,193 @@ If you have `jq` on your system, you can do something like this:
             | jq -r .token`
 
 Otherwise just make it a simple curl command and cut & paste the token yourself.
+
+# Adding to Your Project
+Summary:
+
+* Add the dependency to your `build.gradle` or `pom.xml` file.
+* Setup your Member and MemberRepository. Standard Spring Data things.
+    * Your Member entity should implement `UserDetails`. See below.
+* Define a few Beans.
+    * You can probably copy and paste `ApplicationConfig.java` below.
+
+Gradle:
+
+    dependencies {
+        ...
+        implementation 'org.showpage:spring-web-jwt:1.0.0-SNAPSHOT'
+    }
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+Someone send me the maven equivalent, please.
+
+This will change a tiny bit once we're publishing to Maven Central.
+
+You will need some way of doing user lookups. I'm storing mine in PostgreSQL. You then need to create a bean. I have
+a MemberRepository as follows:
+
+    public interface MemberRepository extends JpaRepository<Member, Integer> {
+        Optional<Member> findByUsername(String value);
+    }
+
+This is my Member entity:
+
+
+    /**
+     * One Member in the database.
+     */
+    @Entity
+    @Data
+    @Builder
+    @AllArgsConstructor
+    public class Member implements UserDetails {
+        /**
+         * Default constructor.
+         */
+        public Member() {
+        }
+
+        /** Primary Key */
+        @Id
+        @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "member_jpa_sequence_generator")
+        @SequenceGenerator(name = "member_jpa_sequence_generator", sequenceName = "member_id_seq", allocationSize = 1)
+        Integer id;
+
+        /** Username. We prefer email addresses. */
+        String username;
+
+        /** Encrypted password. */
+        String password;
+
+        /** User Role -- Admin, Member, et cetera. */
+        @Enumerated(EnumType.STRING)
+        UserRole role;
+
+        /** When this user was first created. */
+        Timestamp createdAt;
+
+        //======================================================================
+        // Methods from UserDetails. These are largely boilerplate. You can
+        // make them complicated if there's a reason to do so.
+        //======================================================================
+
+        /**
+         * Return the list of user roles for UserDetails. These are just a List
+         * of strings (effectively) and can be used to secure portions of your
+         * URL space based on role.
+         *
+         * @return The list of roles. We only support one role per user.
+         */
+        @Override
+        public Collection<? extends GrantedAuthority> getAuthorities() {
+            return List.of(new SimpleGrantedAuthority(role.name()));
+        }
+
+        /**
+         * Is this account non-expired?
+         *
+         * @return True normally. False if the account is marked expired.
+         */
+        @Override
+        public boolean isAccountNonExpired() {
+            return true;
+        }
+
+        /**
+         * Is this account locked?
+         *
+         * @return True normally. false if the account is marked locked.
+         */
+        @Override
+        public boolean isAccountNonLocked() {
+            return true;
+        }
+
+        /**
+         * Are the creds non-expired?
+         *
+         * @return True normally. False if the creds are expired.
+         */
+        @Override
+        public boolean isCredentialsNonExpired() {
+            return true;
+        }
+
+        /**
+         * Is the account enabled?
+         *
+         * @return True normally.
+         */
+        @Override
+        public boolean isEnabled() {
+            return true;
+        }
+
+You can use any class that implements `UserDetails`. Lombok provides my getter and setter with the `@Data` annotation.
+Note the method `getAuthorities()`. I have an enum named `UserRole` that provides the `Member.role` field, but you can
+just use strings or even hardcode something, if all your users are the same, or if you're going to handle user management
+in another fashion.
+
+And then add something like this:
+
+    @Configuration
+    @RequiredArgsConstructor
+    public class ApplicationConfig {
+        /** We use a Member table. */
+        private final MemberRepository memberRepository;
+
+        private static final String[] WHITE_LIST_URL = {
+            "/ping",
+            "/seed",
+            "/register",
+            "/login"
+        };
+
+        /**
+         * UserDetailsService is used by DaoAuthenticationProvider for retrieving a username,
+         * a password, and other attributes for authenticating with a username and password.
+         * Spring Security provides in-memory and JDBC implementations of UserDetailsService.
+         *
+         * @return  A simple lambda
+         */
+        @Bean
+        public UserDetailsService userDetailsService() {
+            return username -> memberRepository
+                .findByUsername(username)
+                .orElseThrow( () -> new UsernameNotFoundException("User not found") );
+        }
+
+        /**
+         * This tells the default URL filter chain what URLs to whitelist.
+         * @return The provider that hands it over.
+         */
+        @Bean
+        public URLWhiteListProvider urlWhiteListProvider() {
+            return () -> WHITE_LIST_URL;
+        }
+    }
+
+The class can be called anything but must be marked with the `@Configuration` annotation or included in other
+classes you have that do `@Configuration` of your beans. I use Project Lombok,
+and the `@RequiredArgsConstructor` annotation gives me a constructor that handles any `private final` fields
+(instead of using @Autowired).
+
+So, what is all this. Well, MemberRepository is, of course, my repository. Do what makes sense for you.
+This is just a Spring Data-JPA thing. If you have a different way of loading users, go for it.
+
+I'll explain the String array shortly.
+
+`userDetailsService()` returns a lambda that is used to get a user baseed on the username. It doesn't try to
+authenticate the password. That happens later.
+
+So, let's talk about the White List stuff. I may be going too far, but I've set up a security filter chain for me that
+fits my needs. It has this line:
+
+        private final URLWhiteListProvider urlWhiteListProvider;
+
+And it expects to be able to get a string array from it. This is the list of URLs that should require no JWT token.
+In this case, you can ping, seed, register, or login without a token, and all other calls will require a proper
+JWT token passed like in the Authorization header as `Bearer YourToken`.
