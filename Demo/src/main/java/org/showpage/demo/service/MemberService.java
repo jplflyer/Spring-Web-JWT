@@ -10,6 +10,7 @@ import org.showpage.springwebjwt.uimodel.AuthenticationResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -23,6 +24,7 @@ public class MemberService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Seed the database with an admin user.
@@ -112,7 +114,7 @@ public class MemberService {
             Member member = Member
                     .builder()
                     .username(username.trim().toLowerCase())
-                    .password(password.trim())
+                    .password( passwordEncoder.encode( password.trim() ) )
                     .role(isAdmin ? UserRole.ADMIN : UserRole.USER)
                     .build();
 
