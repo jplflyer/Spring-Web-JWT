@@ -98,12 +98,15 @@ Gradle:
 
     dependencies {
         ...
-        implementation 'org.showpage:spring-web-jwt:1.0.0-SNAPSHOT'
+        implementation 'io.github.jplflyer:Spring-Web-JWT:1.0.0:plain'
     }
     repositories {
         mavenLocal()
         mavenCentral()
     }
+
+Note: my build is producing a classifier of `plain`, which you see is referenced in the dependency.
+I haven't figured out how to get rid of that.
 
 Someone send me the maven equivalent, please.
 
@@ -297,3 +300,7 @@ Note that I use a fair amount of white space. Code should be readable even to my
 
 Feel free to email my. My email is openly available via GitHub.
 
+## Things To Do
+
+* Update README for Maven examples
+* Produce a no-classifier build, so we can get rid of that.
