@@ -1,8 +1,6 @@
 package org.showpage.springwebjwt.uimodel;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -10,11 +8,12 @@ import lombok.experimental.SuperBuilder;
  * Other calls should have an Authorization header that looks like
  * 'Bearer this-token'.
  */
-@Data
 @NoArgsConstructor
 @SuperBuilder
 public class AuthenticationResponse extends Response {
     /** The signed JWT to begin using. */
+    @Getter
+    @Setter
     private String token;
 
     /**

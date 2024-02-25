@@ -3,10 +3,11 @@ plugins {
     id 'org.springframework.boot' version '3.2.2'
     id 'io.spring.dependency-management' version '1.1.4'
     id "maven-publish"
+    id 'net.thebugmc.gradle.sonatype-central-portal-publisher'  version '1.1.1'
 }
 
-group = 'org.showpage'
-version = '1.0.0-SNAPSHOT'
+group = 'io.github.jplflyer'
+version = '1.0.0'
 
 java {
     sourceCompatibility = '21'
@@ -18,12 +19,16 @@ configurations {
     }
 }
 
+bootJar {
+    enabled = false
+}
+
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
@@ -33,12 +38,7 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok'
 
-    runtimeOnly 'org.postgresql:postgresql'
-
     annotationProcessor 'org.projectlombok:lombok'
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
 }
 
 
@@ -46,34 +46,29 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                from components.java
-                groupId = "org.showpage"
-                artifactId = "spring-web-jwt"
-                version = "1.0.0-SNAPSHOT"
-
-                artifact sourcesJar
-                artifact packageJavadoc
+centralPortal {
+    pom {
+        // `name = project.name`, `description = project.description` and `packaging = "jar"`
+        // are applied automatically, but you can override them here
+        name = 'Spring Web JWT'
+        description = 'Provides boilerplate for implementing JWT Authentication'
+        url = 'https://github.com/jplflyer/Spring-Web-JWT'
+        licenses {
+            license {
+                name = 'The MIT License'
+                url = 'https://opensource.org/license/mit/'
             }
         }
+        developers {
+            developer {
+                id = 'jplflyer'
+                name = 'Joseph Larson'
+                email = 'jpl@showpage.org'
+            }
+        }
+        scm {
+            connection = 'scm:git:git://github.com/jplflyer/Spring-Web-JWT.git'
+            url = 'https://github.com/jplflyer/Spring-Web-JWT'
+        }
     }
-}
-
-javadoc {
-    source = sourceSets.main.allJava
-    classpath = configurations.compileClasspath
-    options.setMemberLevel( JavadocMemberLevel.PUBLIC )
-}
-
-task sourcesJar(type: Jar) {
-    archiveClassifier.set("sources")
-    from sourceSets.main.allJava
-}
-
-task packageJavadoc(type: Jar) {
-    archiveClassifier.set("javadoc")
-    from javadoc
 }
